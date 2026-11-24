@@ -1,0 +1,107 @@
+name: yashin-twitter
+
+x-app: &app
+  restart: unless-stopped
+
+services:
+  users-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: users_db
+      POSTGRES_USER: twitter
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-twitter}
+    ports: ["5440:5432"]
+    volumes: ["users_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twitter -d users_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  subscriptions-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: subscribers_db
+      POSTGRES_USER: twitter
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-twitter}
+    ports: ["5442:5432"]
+    volumes: ["subscriptions_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twitter -d subscribers_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  messages-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: messages_db
+      POSTGRES_USER: twitter
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-twitter}
+    ports: ["5441:5432"]
+    volumes: ["messages_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U twitter -d messages_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  users:
+    <<: *app
+    build:
+      context: .
+      args: { MODULE: user-service }
+    ports: ["9000:9000"]
+    environment:
+      DB_HOST: users-db
+      DB_PORT: 5432
+      DB_NAME: users_db
+      DB_USER: twitter
+      DB_PASSWORD: ${DB_PASSWORD:-twitter}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-me-32-bytes-minimum-length}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+    depends_on:
+      users-db: { condition: service_healthy }
+
+  subscriptions:
+    <<: *app
+    build:
+      context: .
+      args: { MODULE: subscription-service }
+    ports: ["9002:9002"]
+    environment:
+      DB_URL: jdbc:postgresql://subscriptions-db:5432/subscribers_db
+      DB_USER: twitter
+      DB_PASSWORD: ${DB_PASSWORD:-twitter}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-me-32-bytes-minimum-length}
+      USERS_SERVICE_URL: http://users:9000
+    depends_on:
+      subscriptions-db: { condition: service_healthy }
+
+  messages:
+    <<: *app
+    build:
+      context: .
+      args: { MODULE: message-service }
+    ports: ["9001:9001"]
+    environment:
+      DB_URL: jdbc:postgresql://messages-db:5432/messages_db
+      DB_USER: twitter
+      DB_PASSWORD: ${DB_PASSWORD:-twitter}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-me-32-bytes-minimum-length}
+      USERS_SERVICE_URL: http://users:9000
+      SUBSCRIBERS_SERVICE_URL: http://subscriptions:9002
+    depends_on:
+      messages-db: { condition: service_healthy }
+
+  gateway:
+    image: nginx:alpine
+    ports: ["8080:80"]
+    volumes: ["./nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    depends_on: [users, subscriptions, messages]
+
+volumes:
+  users_data:
+  subscriptions_data:
+  messages_data:

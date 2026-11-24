@@ -1,0 +1,792 @@
+{
+  "info": {
+    "name": "Твиттер — три сервиса",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Выполняй запросы по порядку. При повторном запуске измени run. Токены и id сохраняются после успешных ответов."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "run",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authorToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "readerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "authorId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "readerId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "messageId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "invalidToken",
+      "value": "invalid.jwt.token",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Пользователи и токены",
+      "item": [
+        {
+          "name": "Войти администратором",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"adminToken\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Зарегистрировать автора",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"Миша\",\n  \"lastname\": \"Автор\",\n  \"email\": \"author-{{run}}@example.com\",\n  \"password\": \"pass000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"authorId\", data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Зарегистрировать читателя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"Иван\",\n  \"lastname\": \"Читатель\",\n  \"email\": \"reader-{{run}}@example.com\",\n  \"password\": \"pass000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"readerId\", data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Выдать producer автору",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{authorId}}/roles/producer"
+          }
+        },
+        {
+          "name": "Войти автором после выдачи роли",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"author-{{run}}@example.com\",\n  \"password\": \"pass000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"authorToken\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Войти читателем",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"reader-{{run}}@example.com\",\n  \"password\": \"pass000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"readerToken\", data.token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Профиль автора",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users/{{authorId}}"
+          }
+        },
+        {
+          "name": "Батч профилей",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/users?ids={{authorId}},{{readerId}}"
+          }
+        },
+        {
+          "name": "Правка имени",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{authorId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"Михаил\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Сообщения и подписки",
+      "item": [
+        {
+          "name": "Опубликовать сообщение",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Первая запись в нашем твиттере\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code >= 200 && pm.response.code < 300) {",
+                  "  const data = pm.response.json();",
+                  "  pm.collectionVariables.set(\"messageId\", data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Прочитать сообщение",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages/{{messageId}}"
+          }
+        },
+        {
+          "name": "Изменить сообщение",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Обновлённая запись\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Сообщения автора",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages?authorId={{authorId}}&page=0&size=20"
+          }
+        },
+        {
+          "name": "Подписаться читателем",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my/{{authorId}}"
+          }
+        },
+        {
+          "name": "Проверить подписку",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my/{{authorId}}"
+          }
+        },
+        {
+          "name": "ID моих авторов",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my"
+          }
+        },
+        {
+          "name": "Мои авторы с именами",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscribers/users/{{readerId}}/authors"
+          }
+        },
+        {
+          "name": "Подписчики автора",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscribers/users/{{authorId}}/subscribers"
+          }
+        },
+        {
+          "name": "Статистика автора",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/subscribers/users/{{authorId}}/stats"
+          }
+        },
+        {
+          "name": "Лента читателя",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/feed?page=0&size=20"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Реакции",
+      "item": [
+        {
+          "name": "Поставить like",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"like\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Заменить на heart",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"heart\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Счётчики и моя реакция",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions"
+          }
+        },
+        {
+          "name": "Счётчики анонимно",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Ошибки",
+      "item": [
+        {
+          "name": "401: лента без токена",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages/feed"
+          }
+        },
+        {
+          "name": "401: испорченный токен",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{invalidToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/feed"
+          }
+        },
+        {
+          "name": "403: публикация читателем",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Нельзя\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "403: изменение чужого сообщения",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Нельзя\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "409: повторная подписка",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my/{{authorId}}"
+          }
+        },
+        {
+          "name": "422: подписка на себя",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my/{{readerId}}"
+          }
+        },
+        {
+          "name": "422: пустой текст",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "422: неизвестная реакция",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"unknown\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "422: некорректная пагинация",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/feed?size=101"
+          }
+        },
+        {
+          "name": "404: неизвестное сообщение",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages/9223372036854775807"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Отмена действий",
+      "item": [
+        {
+          "name": "Убрать реакцию",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}/reactions"
+          }
+        },
+        {
+          "name": "Отписаться",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/subscribers/my/{{authorId}}"
+          }
+        },
+        {
+          "name": "Лента пуста",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{readerToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/feed"
+          }
+        },
+        {
+          "name": "Удалить сообщение",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authorToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/messages/{{messageId}}"
+          }
+        },
+        {
+          "name": "404 после удаления",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/messages/{{messageId}}"
+          }
+        },
+        {
+          "name": "Снять producer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{authorId}}/roles/producer"
+          }
+        }
+      ]
+    }
+  ]
+}

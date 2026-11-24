@@ -1,0 +1,26 @@
+server:
+  port: 9000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5440}/${DB_NAME:users_db}
+    username: ${DB_USER:twitter}
+    password: ${DB_PASSWORD:twitter}
+  jpa:
+    hibernate:
+      # схему создаёт schema.sql, Hibernate только читает
+      ddl-auto: none
+    open-in-view: false
+  sql:
+    init:
+      # idempotent-скрипт: CREATE TABLE IF NOT EXISTS / ON CONFLICT DO NOTHING
+      mode: always
+
+logging:
+  level:
+    com.yashin.userservice: INFO
+
+jwt:
+  # HMAC, ключ должен быть не короче 32 байт; в проде передавать через переменную окружения
+  secret: ${JWT_SECRET:dev-secret-key-change-me-32-bytes-minimum-length}
+  ttl-hours: ${JWT_TTL_HOURS:1}
